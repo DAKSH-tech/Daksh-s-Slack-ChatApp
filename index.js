@@ -98,18 +98,20 @@ expressApp.post("/chat", async (req, res) => {
 
 app.event("app_mention", async ({ event, client }) => {
   try {
+    console.log("app_mention event received:", event);
     // Remove the bot mention from the message text
     const userMessage = event.text.replace(/<@[^>]+>\s*/, "").trim();
-
+    console.log("app_mention event asking from chatgpt with msg:", userMessage);
     // Get the bot's response using your memory function
     const answer = await askChatGPTWithMemory(event.user, userMessage);
-
+    console.log("app_mention event answer from chatgpt:", answer);
     // Reply in the same thread where the mention happened
     await client.chat.postMessage({
       channel: event.channel,
       thread_ts: event.ts, // This makes the reply threaded
       text: answer,
     });
+    console.log("app_mention event ends:", answer);
   } catch (err) {
     console.error("Slack bot error:", err);
   }

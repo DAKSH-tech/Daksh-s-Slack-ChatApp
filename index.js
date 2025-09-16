@@ -21,7 +21,16 @@ const app = new App({
 
 // --- Express App ---
 const expressApp = receiver.app; // Reuse the same Express instance
-expressApp.use(express.json());
+
+receiver.router.post("/slack/events", (req, res, next) => {
+  if (req.body.type === "url_verification") {
+    return res.send(req.body.challenge);
+  }
+  next();
+});
+
+expressApp.use("/chat", express.json());
+expressApp.use("/memory", express.json());
 
 // --- Simple memory store ---
 const userMemory = new Map();
@@ -107,13 +116,6 @@ app.event("app_mention", async ({ event, client }) => {
   } catch (err) {
     console.error("Slack bot error:", err);
   }
-});
-
-receiver.router.post("/slack/events", (req, res, next) => {
-  if (req.body.type === "url_verification") {
-    return res.send(req.body.challenge);
-  }
-  next();
 });
 
 // --- Start server ---

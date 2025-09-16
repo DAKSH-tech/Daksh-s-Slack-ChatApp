@@ -23,13 +23,13 @@ const app = new App({
 const expressApp = receiver.app; // Reuse the same Express instance
 expressApp.use(express.json());
 
-expressApp.post("/", (req, res, next) => {
-  const { body } = req;
-  const challenge = body?.challenge;
-  console.log("Received body:", body);
-  console.log("Received challenge:", challenge);
-  res.send(challenge || "no challenge");
-});
+// expressApp.post("/", (req, res, next) => {
+//   const { body } = req;
+//   const challenge = body?.challenge;
+//   console.log("Received body:", body);
+//   console.log("Received challenge:", challenge);
+//   res.send(challenge || "no challenge");
+// });
 
 // --- Simple memory store ---
 const userMemory = new Map();

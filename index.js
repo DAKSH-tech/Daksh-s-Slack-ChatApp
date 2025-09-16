@@ -90,6 +90,32 @@ expressApp.post("/chat", async (req, res) => {
   res.json({ reply: answer });
 });
 
+app.event("app_mention", async ({ event, client }) => {
+  try {
+    // Remove the bot mention from the message text
+    const userMessage = event.text.replace(/<@[^>]+>\s*/, "").trim();
+
+    // Get the bot's response using your memory function
+    const answer = await askChatGPTWithMemory(event.user, userMessage);
+
+    // Reply in the same thread where the mention happened
+    await client.chat.postMessage({
+      channel: event.channel,
+      thread_ts: event.ts, // This makes the reply threaded
+      text: answer,
+    });
+  } catch (err) {
+    console.error("Slack bot error:", err);
+  }
+});
+
+receiver.router.post("/slack/events", (req, res, next) => {
+  if (req.body.type === "url_verification") {
+    return res.send(req.body.challenge);
+  }
+  next();
+});
+
 // --- Start server ---
 (async () => {
   const PORT = process.env.PORT || 3000;

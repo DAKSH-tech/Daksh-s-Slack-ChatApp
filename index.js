@@ -26,7 +26,8 @@ expressApp.use(express.json());
 expressApp.post("/", (req, res, next) => {
   const { body } = req;
   const challenge = body?.challenge;
-  return res.send(challenge || "no challenge");
+  console.log("Received challenge:", challenge);
+  res.send(challenge || "no challenge");
 });
 
 // --- Simple memory store ---

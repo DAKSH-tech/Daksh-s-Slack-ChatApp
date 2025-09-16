@@ -26,6 +26,7 @@ expressApp.use(express.json());
 expressApp.post("/", (req, res, next) => {
   const { body } = req;
   const challenge = body?.challenge;
+  console.log("Received body:", body);
   console.log("Received challenge:", challenge);
   res.send(challenge || "no challenge");
 });

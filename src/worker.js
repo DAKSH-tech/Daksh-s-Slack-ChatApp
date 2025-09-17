@@ -81,7 +81,7 @@ async function ackEntry(stream, group, id) {
 // ---------------- Memory Helpers ----------------
 function getThreadKey(body, event) {
   console.log("Event for thread key:", event);
-  return `team-${body.team}:channel-${body.channel}:threads`;
+  return `team-${body.team}:channel-${body.channel || event.channel}:threads`;
 }
 
 async function pushMemory(key, role, content, thread) {

@@ -3,6 +3,9 @@ const { App, ExpressReceiver } = pkg;
 import dotenv from "dotenv";
 import OpenAI from "openai";
 import express from "express";
+import { pushUserEvent } from "./src/redisClient.js";
+import { deleteMsgHandler } from "./src/redisClient.js";
+
 dotenv.config();
 
 // --- OpenAI ---
@@ -20,7 +23,7 @@ const app = new App({
 });
 
 // --- Express App ---
-const expressApp = receiver.app; // Reuse the same Express instance
+const expressApp = receiver.app;
 expressApp.use(express.json());
 
 // expressApp.post("/", (req, res, next) => {
@@ -30,61 +33,6 @@ expressApp.use(express.json());
 //   console.log("Received challenge:", challenge);
 //   res.send(challenge || "no challenge");
 // });
-
-// --- Simple memory store ---
-const userMemory = new Map();
-
-// --- Ask OpenAI with memory (5-message history + current question) ---
-async function askChatGPTWithMemory(userId, question) {
-  if (!userMemory.has(userId)) userMemory.set(userId, []);
-  const memory = userMemory.get(userId);
-
-  // Take only last 5 messages
-  const recentMemory = memory.slice(-5);
-
-  // Build messages array with system + last 5 + current question
-  const messages = [
-    { role: "system", content: "You are a helpful assistant named Warpi." },
-    ...recentMemory,
-    { role: "user", content: question },
-  ];
-
-  try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages,
-    });
-
-    const answer = response.choices[0].message.content.trim();
-
-    // Update memory: push user question + assistant answer
-    memory.push({ role: "user", content: question });
-    memory.push({ role: "assistant", content: answer });
-
-    // Keep only last 5 messages in memory
-    if (memory.length > 5) {
-      userMemory.set(userId, memory.slice(-5));
-    } else {
-      userMemory.set(userId, memory);
-    }
-
-    return answer;
-  } catch (err) {
-    console.error("OpenAI API error:", err);
-    return "Sorry, I ran into an error while trying to respond.";
-  }
-}
-// --- GET endpoint to view user memory ---
-expressApp.get("/memory/:userId", (req, res) => {
-  const { userId } = req.params;
-
-  if (!userId) {
-    return res.status(400).json({ error: "userId is required" });
-  }
-
-  const memory = userMemory.get(userId) || [];
-  res.json({ userId, memory });
-});
 
 // --- Local POST endpoint to test OpenAI ---
 expressApp.post("/chat", async (req, res) => {
@@ -100,35 +48,39 @@ expressApp.post("/chat", async (req, res) => {
 
 expressApp.post("/", async (req, res) => {
   const { body } = req;
-  console.log("Received Slack body:", body);
-
-  // Respond immediately to avoid Slack retrying
-  res.send("ok");
-
   // Only process event callbacks
   if (body.type === "event_callback" && body.event?.type === "app_mention") {
     const event = body.event;
     const userMessage = event.text.replace(/<@[^>]+>\s*/, "").trim();
-    console.log("Message for GPT:", userMessage);
 
     try {
-      const answer = await askChatGPTWithMemory(event.user, userMessage);
-      console.log("Answer from GPT:", answer);
+      await pushUserEvent(event.user, userMessage, event);
 
-      await app.client.chat.postMessage({
+      // Respond immediately with acknowledgment (optional)
+      await client.chat.postMessage({
         channel: event.channel,
         thread_ts: event.ts,
-        text: answer,
-        token: process.env.SLACK_BOT_TOKEN,
+        text: "...",
       });
+      res.status(200).send("Event received");
     } catch (err) {
       console.error("Error sending Slack reply:", err);
     }
+  } else if (
+    body.event.subtype === "message_deleted" ||
+    (body.event.subtype === "message_changed" &&
+      body.event.message?.subtype === "tombstone")
+  ) {
+    await deleteMsgHandler(body.event);
+    res.status(200).send("Deletion event handled");
+  } else {
+    res.status(200).send("No action taken");
   }
 });
+
 // --- Start server ---
 (async () => {
-  const PORT = process.env.PORT || 3000;
+  const PORT = process.env.PORT || 3001;
   await app.start(PORT);
   console.log(`⚡️ Warpi bot is running on port ${PORT}`);
 })();

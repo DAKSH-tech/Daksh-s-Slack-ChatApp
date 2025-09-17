@@ -116,9 +116,13 @@ export async function deleteMsgHandler(event) {
     return; // Not a deletion event
   }
 
-  const threadKey = `thread:MEMORY:team-${
-    event.previous_message.team || event.team_id || event.team
-  }:channel-${channelId}:threads`;
+  const teamId =
+    event.previous_message?.team ||
+    event.team_id ||
+    event.team ||
+    "unknown_team";
+
+  const threadKey = `thread:MEMORY:team-${teamId}:channel-${channelId}:threads`;
 
   // Get all messages from this thread
   const redisClient = getClient();

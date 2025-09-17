@@ -193,9 +193,14 @@ async function processEntry(entryId, payload) {
         threadKey,
         "user",
         event.text || body?.message || "",
-        body.thread_ts
+        event.thread_ts || event.ts
       );
-      await pushMemory(threadKey, "assistant", answer, body.thread_ts);
+      await pushMemory(
+        threadKey,
+        "assistant",
+        answer,
+        event.thread_ts || event.ts
+      );
     } catch (err) {
       console.error("Error saving memory:", err.message);
     }

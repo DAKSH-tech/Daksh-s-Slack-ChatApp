@@ -8,20 +8,27 @@ let client; // Singleton Redis client
 // ---------------- Redis Init ----------------
 export async function initRedis() {
   if (!client) {
-    client = createClient({
-      socket: {
-        host: process.env.REDIS_HOST || "127.0.0.1",
-        port: parseInt(process.env.REDIS_PORT || "6379", 10),
-      },
-      password: process.env.REDIS_PASSWORD || undefined,
-      database: 0,
-    });
+    // Use REDIS_URL if provided; fallback to host/port for local dev
+    const redisOptions = process.env.REDIS_URL
+      ? { url: process.env.REDIS_URL }
+      : {
+          socket: {
+            host: process.env.REDIS_HOST || "127.0.0.1",
+            port: parseInt(process.env.REDIS_PORT || "6379", 10),
+          },
+          password: process.env.REDIS_PASSWORD || undefined,
+          database: 0,
+        };
+
+    client = createClient(redisOptions);
+
+    client.on("error", (err) => console.error("Redis Client Error", err));
+
     await client.connect();
     console.log("✅ Redis connected");
   }
   return client;
 }
-
 // ---------------- Consumer Group ----------------
 export async function ensureConsumerGroup(
   clientInstance,

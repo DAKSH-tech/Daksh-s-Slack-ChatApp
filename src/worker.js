@@ -24,13 +24,20 @@ const limit = pLimit(MAX_CONCURRENCY);
 let client;
 async function initRedis() {
   if (!client) {
-    client = createClient({
-      socket: {
-        host: process.env.REDIS_HOST || "127.0.0.1",
-        port: parseInt(process.env.REDIS_PORT || "6379"),
-      },
-      password: process.env.REDIS_PASSWORD || undefined,
-    });
+    const redisOptions = process.env.REDIS_URL
+      ? { url: process.env.REDIS_URL }
+      : {
+          socket: {
+            host: process.env.REDIS_HOST || "127.0.0.1",
+            port: parseInt(process.env.REDIS_PORT || "6379", 10),
+          },
+          password: process.env.REDIS_PASSWORD || undefined,
+          database: 0,
+        };
+
+    client = createClient(redisOptions);
+
+    client.on("error", (err) => console.error("Redis Client Error", err));
     await client.connect();
     console.log("✅ Redis connected");
     await ensureConsumerGroup(client, STREAM, GROUP);

@@ -117,7 +117,7 @@ export async function deleteMsgHandler(event) {
   }
 
   const threadKey = `thread:MEMORY:team-${
-    event.team_id || event.team || event.previous_message.team
+    event.previous_message.team || event.team_id || event.team
   }:channel-${channelId}:threads`;
 
   // Get all messages from this thread

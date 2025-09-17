@@ -1,7 +1,6 @@
 import pkg from "@slack/bolt";
 const { App, ExpressReceiver } = pkg;
 import dotenv from "dotenv";
-import OpenAI from "openai";
 import express from "express";
 import { pushUserEvent } from "./src/redisClient.js";
 import { deleteMsgHandler } from "./src/redisClient.js";
@@ -9,7 +8,6 @@ import { deleteMsgHandler } from "./src/redisClient.js";
 dotenv.config();
 
 // --- OpenAI ---
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // --- Slack Receiver ---
 const receiver = new ExpressReceiver({
@@ -56,12 +54,6 @@ expressApp.post("/", async (req, res) => {
     try {
       await pushUserEvent(event.user, userMessage, event);
 
-      // Respond immediately with acknowledgment (optional)
-      await client.chat.postMessage({
-        channel: event.channel,
-        thread_ts: event.ts,
-        text: "...",
-      });
       res.status(200).send("Event received");
     } catch (err) {
       console.error("Error sending Slack reply:", err);

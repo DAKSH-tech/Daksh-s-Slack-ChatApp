@@ -175,9 +175,9 @@ async function processEntry(entryId, payload) {
     }
 
     try {
-      await slack.chat.update({
+      await slack.chat.postMessage({
         channel: event.channel,
-        ts: event.thread_ts || event.ts,
+        thread_ts: event.thread_ts || event.ts,
         text: answer,
       });
     } catch (err) {

@@ -61,7 +61,10 @@ export function getClient() {
     throw new Error("Redis client not initialized. Call initRedis() first.");
   return client;
 }
-
+export async function storeWorkspaceToken(response) {
+  const { access_token, team } = response;
+  await redis.hSet("slack_tokens", team.id, access_token);
+}
 // ---------------- Push User Event ----------------
 export async function pushUserEvent(userId, message, event) {
   if (typeof userId !== "string" || typeof message !== "string") {

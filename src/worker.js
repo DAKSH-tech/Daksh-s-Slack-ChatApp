@@ -16,7 +16,6 @@ const CONSUMER =
 const MAX_CONCURRENCY = parseInt(process.env.MAX_OPENAI_CONCURRENCY || "4", 10);
 const MAX_SIZE = parseInt(process.env.MAX_EXCHANGES || "5", 10);
 
-const slack = new WebClient(process.env.SLACK_BOT_TOKEN);
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const limit = pLimit(MAX_CONCURRENCY);
 
@@ -99,6 +98,11 @@ async function getMemory(key) {
   return arr.map((s) => JSON.parse(s));
 }
 
+async function getSlackClient(team_id) {
+  const token = await client.hGet("slack_tokens", team_id);
+  return new WebClient(token);
+}
+
 // ---------------- Dead Letter Queue ----------------
 async function moveToDLQ(id, payload) {
   try {
@@ -177,6 +181,7 @@ async function processEntry(entryId, payload) {
     try {
       console.log("event", event);
       console.log("body", body);
+      const slack = await getSlackClient(body.team);
       await slack.chat.postMessage({
         channel: event.channel,
         thread_ts: event.thread_ts || event.ts,

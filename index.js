@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import express from "express";
 import { pushUserEvent } from "./src/redisClient.js";
 import { deleteMsgHandler } from "./src/redisClient.js";
+import { storeWorkspaceToken } from "./src/redisClient.js";
 
 dotenv.config();
 
@@ -31,18 +32,6 @@ expressApp.use(express.json());
 //   console.log("Received challenge:", challenge);
 //   res.send(challenge || "no challenge");
 // });
-
-// --- Local POST endpoint to test OpenAI ---
-expressApp.post("/chat", async (req, res) => {
-  const { userId, message } = req.body;
-
-  if (!userId || !message) {
-    return res.status(400).json({ error: "userId and message are required" });
-  }
-
-  const answer = await askChatGPTWithMemory(userId, message);
-  res.json({ reply: answer });
-});
 
 expressApp.post("/", async (req, res) => {
   const { body } = req;
@@ -89,6 +78,7 @@ expressApp.get("/", async (req, res) => {
 
   // Store access token in DB or Redis
   console.log("New workspace token:", response.access_token);
+  storeWorkspaceToken(response);
 
   res.send("App installed successfully!");
 });

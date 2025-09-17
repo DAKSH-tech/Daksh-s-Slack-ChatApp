@@ -175,6 +175,8 @@ async function processEntry(entryId, payload) {
     }
 
     try {
+      console.log("event", event);
+      console.log("body", body);
       await slack.chat.postMessage({
         channel: event.channel,
         thread_ts: event.thread_ts || event.ts,

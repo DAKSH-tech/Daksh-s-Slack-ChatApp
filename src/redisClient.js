@@ -135,7 +135,8 @@ export async function deleteMsgHandler(event) {
   for (const msg of messages) {
     try {
       const parsed = JSON.parse(msg);
-      if (parsed?.threadId === event.thread_ts) {
+      const thread_ts = event.thread_ts || event.message?.thread_ts;
+      if (parsed?.threadId === thread_ts) {
         await redisClient.lRem(threadKey, 1, msg); // Remove only this message
       }
     } catch (e) {
